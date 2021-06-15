@@ -1,0 +1,85 @@
+alias intVent d0
+alias intDoor d1
+alias gasSensor d2
+alias extVent d3
+alias extDoor d4
+alias airlock d5
+alias sensorValue r3
+define intPressure 101
+define extPressure 2
+init:
+s intDoor Mode 1 #pad on door only sends signal
+s extDoor Mode 1 #pad on door only sends signal
+s intDoor Lock 0 #unlock door
+s extDoor Lock 0 #unlock door
+s intDoor Open 1 #Set internal door open
+s extDoor Open 0 #Set external door closed
+s intVent On 0 #set internal vent off
+s extVent On 0 #Set external vent off
+internalOpenLoop: #loop when internal door open
+l r0 intDoor Setting # read if pad is used
+l r1 extDoor Setting # read if pad is used
+l sensorValue gasSensor Pressure # read gas sensor in airlock
+l r4 airlock Setting #read status of airlock 2
+beq r4 0 closeIintDoor # if db on ic for airlock 2 Setting = 0 go to closeIntDoor loop
+beq r0 0 closeIintDoor # if pad on door Setting = 0 go to closeIntDoor loop
+beq r1 1 closeIintDoor # if pad on door Setting = 0 go to closeIntDoor loop
+yield # pause a tick
+j internalOpenLoop # jump to internalOpenLoop
+closeIintDoor: # loop when closing internal door
+s db Setting 1 # set db to 1 to tell airlock 2 to also cycle
+s intDoor Open 0 # close internal door
+j emptyLockAir #jump to emptyLockAir
+emptyLockAir:
+s intVent Mode 1 # set intVent to suck air out of airlock
+s intVent On 1 # set intVent to on
+waitLockAirEmpty: #loop waiting for airlock to empty
+l sensorValue gasSensor Pressure # read sensor
+beq sensorValue 0 fillLockAtmos # if sensor value = 0 go to fillLockAtmos
+yield # pause a tick
+j waitLockAirEmpty # jump to waitLockAirEmpty
+fillLockAtmos:
+s intVent On 0 # turn intVent off
+s extVent Mode 0 #set extVent to fill atmosphere into airlock
+s extVent On 1 #turn exxtVent on
+waitLockAtmosFill: #loop wait to fill airlock to atmos pressure
+l sensorValue gasSensor Pressure #read sensor
+bge sensorValue extPressure openExtDoor #if sensor value >= atmos pressure jump openExtDoor
+yield # pause a tick
+j waitLockAtmosFill # jump waitLockAtmosFill
+openExtDoor:
+s extVent On 0 # turn extVent off
+s extDoor Open 1 #open extDoor
+j externalOpenLoop #j externalOpenLoop
+externalOpenLoop: #loop when external door is open
+l r0 intDoor Setting #read pad on internal door
+l r1 extDoor Setting #read pad on external door
+l r4 airlock Setting #read db on other airlock ic
+beq r4 1 cycleOutToIn # if db on ic for airlock 2 Setting = 0 go to closeIntDoor loop
+beq r0 1 cycleOutToIn # if pad on door Setting = 0 go to closeIntDoor loop
+beq r1 0 cycleOutToIn # if pad on door Setting = 0 go to closeIntDoor loop
+yield #pause a tick
+j externalOpenLoop #jump externalOpenLoop 
+closeExtDoor:
+s db Setting 0 #set db = 0 so other airlock ic knows to cycle
+s extDoor Open 0 #close external door
+j emptyLockAtmos # jump emptyLockAtmos
+emptyLockAtmos:
+s extVent Mode 1 #set extVent to suck atmos out of airlock
+s extVent On 1 #turn extVent on
+waitLockAtmosEmpty: #loop wait for airlock to empty all atmos
+l sensorValue gasSensor Pressure #read sensor
+beq sensorValue 0 fillLockAir # if sensor value = 0 jump fill air
+j waitLockAtmosEmpty # jump waitLockAtmosEmpty
+fillLockAir:
+s extVent On 0 #turn extVent off
+s intVent Mode 0 # set intVent to fill air into airlock
+s intVent On 1 # turn intVent on
+waitLockAirFill: #loop wait to fill desired pressure of air into airlock
+l sensorValue gasSensor Pressure # read sensor
+bge sensorValue intPressure openIntDoor #if sensor value >= desired pressure jump openIntDoor
+j waitLockAirFill # jump waitLockAirFill
+openIntDoor:
+s intVent On 0 #turn intVent off
+s intDoor Open 1 #open internal door
+j internalOpenLoop # jump to internal door open loop
