@@ -1,0 +1,29 @@
+alias sensor d2 # Gas Sensor
+alias dValve d3 # Digital Valve
+alias ldTemp d1 # Led Display
+alias ldPres d4 # Led Display
+init:
+s ldTemp Color 0 # Set Color on Display
+s ldPres Color 5 # Set Color on Display
+mainloop:
+s db Setting 100 # Write 100 to db, so we can debug if needed
+yield # wait a tick so we can see db state if needed
+l r0 sensor Pressure # read into register 0 pressure data
+l r1 sensor Temperature # read into register 1 temperature data
+sub r1 r1 273.14 # humanize temperature value to C
+div r0 r0 100 # humanize pressure value to bar
+s ldPres Setting r0 # write pressure in bar to led display
+s ldTemp Setting r1 # write temperature in C to led display
+bgt r1 26 coolingOn # branch if greater then 26C to coolingOn
+blt r1 20 coolingOff # branch if less than 20C to coolingOff
+j mainloop #jump to mainloop
+coolingOff:
+s dValve On 0 # write to digitalvalve On to 0 (turn it off)
+s db Setting 200 # Write 200 to db, so we can debug if needed
+yield # wait a tick so we can see db state if needed
+j mainloop #jump to mainloop
+coolingOn:
+s dValve On 1 # write to digitalvalve On to 1 (turn it on)
+s db Setting 300 # Write 300 to db, so we can debug if needed
+yield # wait a tick so we can see db state if needed
+j mainloop #jump to mainloop
