@@ -1,4 +1,3 @@
-#By mancert
 alias sensor d2 # Gas Sensor
 alias dValve d3 # Digital Valve
 alias ldTemp d1 # Led Display
