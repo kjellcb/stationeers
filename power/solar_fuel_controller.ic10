@@ -1,0 +1,77 @@
+alias Battery d0
+alias SolarSensor d1
+alias FuelGenerator d2
+alias PanelType1 d3 # Any controllable Solar Panel
+alias PanelType2 d4 # Optional 2nd type of Solar Panel (heavy)
+alias Display d5
+
+alias AngleVertical r0
+alias AngleHorizontal r1
+alias CorrectionAngle r2
+alias Panel1Hash r3
+alias Panel2Hash r4
+alias FuelAvailable r5
+alias BatteryRatio r6
+
+define MIN_BATTERY .2
+define MAX_BATTERY .4
+# define directions of sensor and panel power ports
+define SENSOR_DATA_ANGLE 0
+define PANEL_POWER_ANGLE 90
+# calculate horizontal correction
+sub CorrectionAngle SENSOR_DATA_ANGLE PANEL_POWER_ANGLE
+sub CorrectionAngle CorrectionAngle 90
+
+# load panel PrefabHash for later use
+l Panel1Hash PanelType1 PrefabHash
+bdns PanelType2 start
+l Panel2Hash PanelType2 PrefabHash
+
+# set Display to DigitMode
+bdns Display start
+s Display Mode 0
+
+start:
+	yield
+	l AngleVertical SolarSensor Vertical
+	sub AngleVertical 90 AngleVertical
+	l AngleHorizontal SolarSensor Horizontal
+	add AngleHorizontal AngleHorizontal CorrectionAngle
+	
+	# if Display, showing fuel remaining
+	bdns Display panelmove
+	l FuelAvailable FuelGenerator ImportCount
+	s Display Setting FuelAvailable
+	bleal FuelAvailable 10 reddisplay # 10 fuel or less => Red
+	bleal BatteryRatio 20 orangedisplay # 20 fuel or less => Orange
+	s Display Color 2 # 21 fuel or more => Green
+	j panelmove
+	
+orangedisplay:
+	s Display Color 3
+	j panelmove
+	
+reddisplay:
+	s Display Color 4
+	
+panelmove:
+	sb Panel1Hash Vertical AngleVertical
+	sb Panel1Hash Horizontal AngleHorizontal
+	bdns PanelType2 battery
+	sb Panel2Hash Vertical AngleVertical
+	sb Panel2Hash Horizontal AngleHorizontal
+
+battery:
+	# Checking if fuel generator needs to be started
+	l BatteryRatio Battery Ratio
+	bge BatteryRatio MAX_BATTERY stopfuel
+	ble BatteryRatio MIN_BATTERY startfuel
+j start
+
+startfuel:
+s FuelGenerator On 1
+j start
+
+stopfuel:
+s FuelGenerator On 0
+j start
