@@ -38,9 +38,8 @@ start:
 	l AngleHorizontal SolarSensor Horizontal
 	add AngleHorizontal AngleHorizontal CorrectionAngle
 	
+	# if Display, showing fuel remaining
 	bdns Display panelmove
-	
-	paneldisplay:
 	l FuelAvailable FuelGenerator ImportCount
 	s Display Setting FuelAvailable
 	bleal FuelAvailable 10 reddisplay # 10 fuel or less => Red
@@ -48,14 +47,14 @@ start:
 	s Display Color 2 # 21 fuel or more => Green
 	j panelmove
 	
-	orangedisplay:
-	s Display 3
+orangedisplay:
+	s Display Color 3
 	j panelmove
 	
-	reddisplay:
-	s Display 4
+reddisplay:
+	s Display Color 4
 	
-	panelmove:
+panelmove:
 	sb Panel1Hash Vertical AngleVertical
 	sb Panel1Hash Horizontal AngleHorizontal
 	bdns PanelType2 start
