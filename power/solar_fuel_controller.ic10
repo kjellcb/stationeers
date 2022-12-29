@@ -57,14 +57,15 @@ reddisplay:
 panelmove:
 	sb Panel1Hash Vertical AngleVertical
 	sb Panel1Hash Horizontal AngleHorizontal
-	bdns PanelType2 start
+	bdns PanelType2 battery
 	sb Panel2Hash Vertical AngleVertical
 	sb Panel2Hash Horizontal AngleHorizontal
-	
+
+battery:
 	# Checking if fuel generator needs to be started
 	l BatteryRatio Battery Ratio
-	bgeal BatteryRatio MAX_BATTERY stopfuel
-	bleal BatteryRatio MIN_BATTERY startfuel
+	bge BatteryRatio MAX_BATTERY stopfuel
+	ble BatteryRatio MIN_BATTERY startfuel
 j start
 
 startfuel:
